@@ -10,11 +10,7 @@ from __future__ import unicode_literals, print_function, division
 import time
 import math
 import pandas as pd
-
 import torch
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
 
 from gluonnlp.data import SentencepieceTokenizer
 import matplotlib.pyplot as plt
@@ -46,10 +42,25 @@ class Dictionary:
                 self.index2token[num] = token
                 self.token2index[token] = num
                 self.n_tokens+=1
+            
+        self.index2token[self.n_tokens] = '<EQ>'
+        self.token2index['<EQ>'] = self.n_tokens
+        self.n_tokens+=1
                 
             
 def indexesFromSentence(dictionary, sentence):
-    return [dictionary.token2index[token] for token in sp(sentence)]
+    tokens = [token for token in sp(sentence)]
+    new_tokens = []
+    i=0
+    while i<len(tokens):
+        if i < len(tokens)-3 and (tokens[i] == '▁(' or tokens[i] == '(') and tokens[i+1] == '수' and tokens[i+2] == '식' and tokens[i+3] == ')':
+            new_tokens.append('<EQ>')
+            i= i+4
+        else:
+            new_tokens.append(tokens[i])
+            i+=1
+    
+    return [dictionary.token2index[token] for token in new_tokens]
 
 
 def tensorFromSentence(dictionary, sentence):

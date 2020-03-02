@@ -8,7 +8,6 @@ Created on Tue Feb 25 15:38:35 2020
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MAX_LENGTH = 100
@@ -26,6 +25,8 @@ class Encoder(nn.Module):
         # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
         embedded = self.embedtable[input, :].view(1, -1) # view=reshape
         output = torch.unsqueeze(embedded, 0)
+        if device.type == 'cuda':
+            output = output.cuda()
         output, hidden = self.gru(output, hidden)
         return output, hidden
     
@@ -78,6 +79,9 @@ class AttnDecoder(nn.Module):
         embedded = torch.unsqueeze(embedded, 0)
         embedded = self.dropout(embedded)
 
+        if device.type == 'cuda':
+            embedded = embedded.cuda()
+            
         attn_weights = F.softmax(
             self.attn(torch.cat((embedded[0], hidden[0]), 1)), dim=1)
         attn_applied = torch.bmm(attn_weights.unsqueeze(0),

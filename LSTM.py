@@ -21,8 +21,12 @@ file_name = "paraphrasing data_DH.xlsx"
 
 dictionary, pair_data = prepareData("kor", file_name)
 embedtable = np.loadtxt("word_emb.txt", delimiter=" ", dtype='float32')
+embedtable = np.append(embedtable, np.random.rand(1, 128).astype('float32'), axis=0) # '<EQ>'
+
 
 encoder = Encoder(dictionary.n_tokens, 128, embedtable).to(device)
 attndecoder = AttnDecoder(128, dictionary.n_tokens, embedtable, dropout_p=0.1).to(device)
 
-trainIters(encoder, attndecoder, dictionary, pair_data, epochs=10, print_every=10)
+trainIters(encoder, attndecoder, dictionary, pair_data, epochs=100, print_every=57)
+
+evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=10)
