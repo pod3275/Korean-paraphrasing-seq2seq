@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 from utils import tensorsFromPair, timeSince, showPlot
+from math import ceil
 from eval import evaluateRandomly
 
 teacher_forcing_ratio = 0.5
@@ -146,7 +147,7 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
     criterion = nn.NLLLoss()
 
     for e in range(epochs):
-        num_batch = len(pairs) // batch_size + 1
+        num_batch = ceil(len(pairs) // batch_size)
         print_loss_total = 0
 
         for b in range(num_batch):
