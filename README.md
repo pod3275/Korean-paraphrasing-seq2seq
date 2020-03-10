@@ -1,7 +1,7 @@
 # Korean-paraphrasing-seq2seq
 
 ## Requirements
-- [Python 3.6](https://www.python.org/downloads/)
+- [Python 3.7](https://www.python.org/downloads/)
 - [Pandas](https://pandas.pydata.org/)
 - [Matplotlib](https://matplotlib.org/)
 - [xlrd](https://pypi.org/project/xlrd/)
