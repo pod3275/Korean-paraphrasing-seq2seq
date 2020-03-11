@@ -16,12 +16,14 @@ from gluonnlp.data import SentencepieceTokenizer
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import matplotlib.ticker as ticker
+from kobert.utils import get_tokenizer
 
 
 SOS_token = 0
 EOS_token = 1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-sp = SentencepieceTokenizer("C:/KoBERT/kobert_news_wiki_ko_cased-1087f8699e.spiece")
+tok_path = get_tokenizer()
+sp  = SentencepieceTokenizer(tok_path)
     
             
 class Dictionary:
