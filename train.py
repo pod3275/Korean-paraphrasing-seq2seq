@@ -75,6 +75,65 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     return loss.item() / target_length
 
 
+# def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
+#     encoder_optimizer.zero_grad()
+#     decoder_optimizer.zero_grad()
+
+#     loss = 0
+#     target_length_total=0
+
+#     for d in range(len(input_tensors)):
+#         input_tensor = input_tensors[d]
+#         target_tensor = target_tensors[d]
+
+#         encoder_hidden = encoder.initHidden()
+
+#         input_length = input_tensor.size(0)
+#         target_length = target_tensor.size(0)
+
+#         encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+
+#         for ei in range(input_length):
+#             encoder_output, encoder_hidden = encoder(
+#                 input_tensor[ei], encoder_hidden)
+#             encoder_outputs[ei] = encoder_output[0, 0]
+
+#         decoder_input = torch.tensor([[SOS_token]], device=device)
+
+#         decoder_hidden = encoder_hidden
+
+#         use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
+
+#         if use_teacher_forcing:
+#             # Teacher forcing 포함: 목표를 다음 입력으로 전달
+#             for di in range(target_length):
+#                 decoder_output, decoder_hidden, decoder_attention = decoder(
+#                     decoder_input, decoder_hidden, encoder_outputs)
+#                 loss += criterion(decoder_output, target_tensor[di])
+#                 decoder_input = target_tensor[di]  # Teacher forcing
+
+#         else:
+#             # Teacher forcing 미포함: 자신의 예측을 다음 입력으로 사용
+#             for di in range(target_length):
+#                 decoder_output, decoder_hidden, decoder_attention = decoder(
+#                     decoder_input, decoder_hidden, encoder_outputs)
+#                 topv, topi = decoder_output.topk(1)
+#                 decoder_input = topi.squeeze().detach()  # 입력으로 사용할 부분을 히스토리에서 분리
+
+#                 loss += criterion(decoder_output, target_tensor[di])
+#                 if decoder_input.item() == EOS_token:
+#                     break
+        
+#         target_length_total+=target_length
+
+#     loss.backward()
+
+#     encoder_optimizer.step()
+#     decoder_optimizer.step()
+
+#     return loss.item() / target_length_total
+
+
 def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()

@@ -27,6 +27,9 @@ embedtable = np.append(embedtable, np.random.rand(1, 128).astype('float32'), axi
 encoder = Encoder(dictionary.n_tokens, 128, embedtable).to(device)
 attndecoder = AttnDecoder(128, dictionary.n_tokens, embedtable, dropout_p=0.1).to(device)
 
-trainIters(encoder, attndecoder, dictionary, pair_data, epochs=100)
+print(dictionary)
+print(pair_data)
 
-evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=10)
+# trainIters(encoder, attndecoder, dictionary, pair_data, epochs=100)
+
+# evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=10)

@@ -11,6 +11,8 @@ import time
 import math
 import pandas as pd
 import torch
+import random
+from torch.utils import data
 
 from gluonnlp.data import SentencepieceTokenizer
 import matplotlib.pyplot as plt
@@ -19,8 +21,15 @@ import matplotlib.ticker as ticker
 from kobert.utils import get_tokenizer
 
 
+# config
+BATCH_SIZE = 32 
+TEST_RATIO = 0.15
+SEED = 20200311
+MAX_SEQ_LEN = 50
+
 SOS_token = 0
 EOS_token = 1
+PAD_token = 2
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 tok_path = get_tokenizer()
 sp  = SentencepieceTokenizer(tok_path)
@@ -49,6 +58,28 @@ class Dictionary:
         self.token2index['<EQ>'] = self.n_tokens
         self.n_tokens+=1
                 
+
+class Loader:
+    def __init__(self, dictionary, pairs):
+        self.pad = lambda x: torch.cat([x, torch.empty(MAX_SEQ_LEN - x.size(0), dtype=torch.long).fill_(PAD_token)], dim = 0)
+        self.trim = lambda x: x[:MAX_SEQ_LEN].contiguous()
+        self.dic_ = dictionary 
+        self.train, self.test = self.get_train_test_loader(pairs) 
+
+    def sent_into_numeric(self, sentence):
+        ten_ = tensorFromSentence(self.dic_,sentence)
+        return self.trim(ten_) if ten_.size(0) > MAX_SEQ_LEN else self.pad(ten_) 
+
+    def get_train_test_loader(self, pairs):
+        # shuffle pairs
+        random.seed(SEED)
+        random.shuffle(pairs)
+
+        # set idx
+        test_pos = int(len(pairs)*TEST_RATIO)
+
+        # make loader
+        return data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[:-test_pos]],batch_size=BATCH_SIZE), data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[-test_pos:]],batch_size=BATCH_SIZE)
             
 def indexesFromSentence(dictionary, sentence):
     tokens = [token for token in sp(sentence)]
@@ -68,7 +99,7 @@ def indexesFromSentence(dictionary, sentence):
 def tensorFromSentence(dictionary, sentence):
     indexes = indexesFromSentence(dictionary, sentence)
     indexes.append(EOS_token)
-    return torch.tensor(indexes, dtype=torch.long, device=device).view(-1, 1)
+    return torch.tensor(indexes, dtype=torch.long, device=device)
 
 
 def tensorsFromPair(pair, dictionary):
