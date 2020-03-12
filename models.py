@@ -1,100 +1,52 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 25 15:38:35 2020
-
-@author: 이상헌
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MAX_LENGTH = 100
+from config import *
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_size, embedtable):
+    def __init__(self, embedtable):
         super(Encoder, self).__init__()
-        self.hidden_size = hidden_size
-        self.embedtable = torch.from_numpy(embedtable)
-        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-#        self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size)
+        self.emb = nn.Embedding(*embedtable.shape)
+        self.emb.weight.data.copy_(embedtable)
+        self.gru = nn.GRU(WORD_DIM, HIDDEN_DIM, batch_first=True)
+        self.hidden = nn.Parameter(self.initHidden())
         
-    def forward(self, input, hidden):
-        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-        embedded = self.embedtable[input, :].view(1, -1) # view=reshape
-        output = torch.unsqueeze(embedded, 0)
-        if device.type == 'cuda':
-            output = output.cuda()
-        output, hidden = self.gru(output, hidden)
+    def forward(self, input_):
+        bsz_ = input_.size(0)
+        x = self.emb(input_)
+        output, hidden = self.gru(x, self.hidden[:,:bsz_])
         return output, hidden
     
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
-    
-    
-#class Decoder(nn.Module):
-#    def __init__(self, hidden_size, output_size):
-#        super(Decoder, self).__init__()
-#        self.hidden_size = hidden_size
-#        
-#        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-#        self.embedding = nn.Embedding(output_size, hidden_size)
-#        self.lstm = nn.LSTM(hidden_size, hidden_size)
-#        self.out = nn.Linear(hidden_size, output_size)
-#        self.softmax = nn.LogSoftmax(dim=1)
-#        
-#    def forward(self, input, hidden):
-#        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-#        output = self.embedding(input).view(1, 1, -1)
-#        output = F.relu(output)
-#        output, hidden = self.lstm(output, hidden)
-#        output = self.softmax(self.out(output[0]))
-#        
-#    def initHidden(self):
-#        return torch.zeros(1, 1, self.hidden_size, device=device)
-        
+        return torch.zeros(NUM_LAYER*(int(BIDIRECTIONAL)+1), BATCH_SIZE, HIDDEN_DIM)
+            
     
 class AttnDecoder(nn.Module):
-    def __init__(self, hidden_size, output_size, embedtable, dropout_p=0.1, max_length=MAX_LENGTH):
+    def __init__(self, embedtable):
         super(AttnDecoder, self).__init__()
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.dropout_p = dropout_p
-        self.max_length = max_length
-        self.embedtable = torch.from_numpy(embedtable)
+        self.vocab_size = embedtable.shape[0]
+        self.emb = nn.Embedding(*embedtable.shape)
+        self.emb.weight.data.copy_(embedtable)
+        self.attn = nn.Linear(HIDDEN_DIM * 2, MAX_SEQ_LEN)
+        self.attn_combine = nn.Linear(HIDDEN_DIM * 2, HIDDEN_DIM)
+        self.dropout = nn.Dropout(DROPOUT)
+        self.gru = nn.GRU(HIDDEN_DIM, HIDDEN_DIM, batch_first=True)
+        self.out = nn.Linear(HIDDEN_DIM, self.vocab_size)
+        # self.hidden = nn.Parameter(self.initHidden())
 
+    def forward(self, input_, encoder_hidden, encoder_outputs):
         # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-#        self.embedding = nn.Embedding(self.output_size, self.hidden_size)
-        self.attn = nn.Linear(self.hidden_size * 2, self.max_length)
-        self.attn_combine = nn.Linear(self.hidden_size * 2, self.hidden_size)
-        self.dropout = nn.Dropout(self.dropout_p)
-        self.gru = nn.GRU(self.hidden_size, self.hidden_size)
-        self.out = nn.Linear(self.hidden_size, self.output_size)
-
-    def forward(self, input, hidden, encoder_outputs):
-        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-        embedded = self.embedtable[input, :].view(1, -1)
-        embedded = torch.unsqueeze(embedded, 0)
-        embedded = self.dropout(embedded)
-
-        if device.type == 'cuda':
-            embedded = embedded.cuda()
-            
-        attn_weights = F.softmax(
-            self.attn(torch.cat((embedded[0], hidden[0]), 1)), dim=1)
-        attn_applied = torch.bmm(attn_weights.unsqueeze(0),
-                                 encoder_outputs.unsqueeze(0))
-
-        output = torch.cat((embedded[0], attn_applied[0]), 1)
-        output = self.attn_combine(output).unsqueeze(0)
+        bsz_ = input_.size(0)
+        x = self.emb(input_)
+        embedded = self.dropout(x)
+        attn_weights = F.softmax(self.attn(torch.cat((embedded, encoder_hidden.permute([1,0,2]).expand(-1,50,-1)[:bsz_]), 2)), dim=1)
+        attn_applied = torch.bmm(attn_weights,encoder_outputs) # batch x MAX_SEQ_LEN x HIDDEN_DIM
+        output = torch.cat((embedded, attn_applied), 2)
+        output = self.attn_combine(output)
 
         output = F.relu(output)
-        output, hidden = self.gru(output, hidden)
+        output, _ = self.gru(output, encoder_hidden)
 
-        output = F.log_softmax(self.out(output[0]), dim=1)
-        return output, hidden, attn_weights
-
-    def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+        output = F.log_softmax(self.out(output), dim=2)
+        return output, attn_weights

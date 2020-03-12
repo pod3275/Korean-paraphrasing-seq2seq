@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 25 15:38:35 2020
-
-@author: 이상헌
-"""
-
 from __future__ import unicode_literals, print_function, division
 
 import time
@@ -13,6 +6,7 @@ import pandas as pd
 import torch
 import random
 from torch.utils import data
+from config import *
 
 from gluonnlp.data import SentencepieceTokenizer
 import matplotlib.pyplot as plt
@@ -21,18 +15,6 @@ import matplotlib.ticker as ticker
 from kobert.utils import get_tokenizer
 
 
-# config
-BATCH_SIZE = 32 
-TEST_RATIO = 0.15
-SEED = 20200311
-MAX_SEQ_LEN = 50
-
-SOS_token = 0
-EOS_token = 1
-PAD_token = 2
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-tok_path = get_tokenizer()
-sp  = SentencepieceTokenizer(tok_path)
     
             
 class Dictionary:
@@ -41,9 +23,11 @@ class Dictionary:
         self.token2index = {}
         self.index2token = {} 
         self.n_tokens = 0
+        tok_path = get_tokenizer()
+        self.sp = SentencepieceTokenizer(tok_path)
                       
     def addSentence(self, sentence):
-        for token in sp(sentence):
+        for token in self.sp(sentence):
             self.addToken(token)
         
     def generateIdx(self):
@@ -54,13 +38,16 @@ class Dictionary:
                 self.token2index[token] = num
                 self.n_tokens+=1
             
-        self.index2token[self.n_tokens] = '<EQ>'
-        self.token2index['<EQ>'] = self.n_tokens
-        self.n_tokens+=1
+        # index assign for special tokens
+        for tok in SPECIAL_TOKENS: 
+            self.index2token[self.n_tokens] = tok
+            self.token2index[tok] = self.n_tokens
+            self.n_tokens+=1
                 
 
 class Loader:
     def __init__(self, dictionary, pairs):
+        PAD_token = dictionary.n_tokens + (SPECIAL_TOKENS.index('<PAD>') - len(SPECIAL_TOKENS))
         self.pad = lambda x: torch.cat([x, torch.empty(MAX_SEQ_LEN - x.size(0), dtype=torch.long).fill_(PAD_token)], dim = 0)
         self.trim = lambda x: x[:MAX_SEQ_LEN].contiguous()
         self.dic_ = dictionary 
@@ -82,24 +69,18 @@ class Loader:
         return data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[:-test_pos]],batch_size=BATCH_SIZE), data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[-test_pos:]],batch_size=BATCH_SIZE)
             
 def indexesFromSentence(dictionary, sentence):
-    tokens = [token for token in sp(sentence)]
-    new_tokens = []
-    i=0
-    while i<len(tokens):
-        if i < len(tokens)-3 and (tokens[i] == '▁(' or tokens[i] == '(') and tokens[i+1] == '수' and tokens[i+2] == '식' and tokens[i+3] == ')':
-            new_tokens.append('<EQ>')
-            i= i+4
-        else:
-            new_tokens.append(tokens[i])
-            i+=1
-    
-    return [dictionary.token2index[token] for token in new_tokens]
+    for k,v in KOREAN_2_SPECIAL.items(): # replace special tokens
+        sentence = sentence.replace(k,v)
+    tokens = [token for token in dictionary.sp(sentence)]
+    tokens = [SPECIAL_2_ENG[ele] if ele in SPECIAL_2_ENG else ele for ele in tokens]
+    # print(tokens)
+    return [dictionary.token2index[token] for token in tokens]
 
 
 def tensorFromSentence(dictionary, sentence):
     indexes = indexesFromSentence(dictionary, sentence)
     indexes.append(EOS_token)
-    return torch.tensor(indexes, dtype=torch.long, device=device)
+    return torch.tensor(indexes, dtype=torch.long)
 
 
 def tensorsFromPair(pair, dictionary):
