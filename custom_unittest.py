@@ -7,6 +7,7 @@ from utils import *
 from config import *
 from train import *
 from models import *
+from eval import *
 
 
 
@@ -100,9 +101,30 @@ def test_indexes_from_sentence():
 	for tc in test_sentences:
 		print(indexesFromSentence(dic_, tc))
 
+
+def test_infer_sentence():
+	# encoder, decoder, sentence, dictionary
+	# VOCAB_SIZE = 35000
+	file_name = "paraphrasing data_DH.xlsx"
+	dictionary, pair_data = prepareData("kor", file_name)
+	VOCAB_SIZE = dictionary.n_tokens
+	embed = torch.from_numpy(np.random.rand(VOCAB_SIZE,WORD_DIM)).float()
+	enc = Encoder(embed)
+	dec = AttnDecoder(embed)
+
+	test_cases = ['여기서 젤라틴의 수소 이온 지수(pH)를 (미지수)라 할 때, 젤라틴의 두께를 (미지수)를 사용한 식으로 나타내면 (수식)이다.',
+						'직교 : 두 직선 (미지수)와 (미지수)의 교각이 직각일 때, 두 직선은 서로 직교한다고 한다. (화살표) 기호 (수식)',
+						'또, (수식) (등호) (수식) (등호) (수식) 이면 (수식)이 성립해요.']
+
+	# for sent in test_cases:
+		# infer_sentence(enc, dec, sent, dictionary)
+	infer_sentence(enc, dec, test_cases, dictionary)
+
+
 if __name__ == '__main__':
-	test_loader()
-	test_encoder()
-	test_decoder()
-	test_train_epoch()
-	test_indexes_from_sentence()
+	# test_loader()
+	# test_encoder()
+	# test_decoder()
+	# test_train_epoch()
+	# test_indexes_from_sentence()
+	test_infer_sentence()

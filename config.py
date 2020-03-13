@@ -7,6 +7,7 @@ MAX_SEQ_LEN = 50
 USE_TEACHER_FORCING = True
 SOS_token = 0
 EOS_token = 1
+PAD_token = 6
 BIDIRECTIONAL = False
 HIDDEN_DIM = 128
 DROPOUT = 0.2
@@ -26,5 +27,5 @@ SPECIAL_2_ENG = dict(zip(['\N{Arabic Poetic Verse Sign}',
 					 '\N{Arabic Place of Sajdah}',
 					 '\N{Arabic Sign Sindhi Ampersand}'], SPECIAL_TOKENS[:4]))
 
-SAMPLE_TEST_EVERY = 10
+SAMPLE_TEST_EVERY = 2
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

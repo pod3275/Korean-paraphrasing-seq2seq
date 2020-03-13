@@ -1,12 +1,10 @@
-from __future__ import unicode_literals, print_function, division
-
 import time
 import math
 import pandas as pd
 import torch
 import random
 from torch.utils import data
-from config import *
+import numpy as np
 
 from gluonnlp.data import SentencepieceTokenizer
 import matplotlib.pyplot as plt
@@ -14,6 +12,9 @@ plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 from kobert.utils import get_tokenizer
 
+
+# custom modules
+from config import *
 
     
             
@@ -32,18 +33,10 @@ class Dictionary:
         
     def generateIdx(self):
         with open("word_list.txt", "r", encoding="UTF8") as f:
-            for num, token in enumerate(f):
-                token = token.strip()
-                self.index2token[num] = token
-                self.token2index[token] = num
-                self.n_tokens+=1
-            
-        # index assign for special tokens
-        for tok in SPECIAL_TOKENS: 
-            self.index2token[self.n_tokens] = tok
-            self.token2index[tok] = self.n_tokens
-            self.n_tokens+=1
-                
+            self.index2token = [tok.strip() for tok in f]
+        self.index2token[2:2] = SPECIAL_TOKENS
+        self.token2index = {v : k for k,v in enumerate(self.index2token)}
+        self.n_tokens = len(self.index2token)                
 
 class Loader:
     def __init__(self, dictionary, pairs):
@@ -57,9 +50,10 @@ class Loader:
         ten_ = tensorFromSentence(self.dic_,sentence)
         return self.trim(ten_) if ten_.size(0) > MAX_SEQ_LEN else self.pad(ten_) 
 
-    def get_train_test_loader(self, pairs):
+    def get_train_test_loader(self, pairs_):
         # shuffle pairs
         random.seed(SEED)
+        pairs = [item for item in pairs_] # copy
         random.shuffle(pairs)
 
         # set idx
@@ -67,7 +61,20 @@ class Loader:
 
         # make loader
         return data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[:-test_pos]],batch_size=BATCH_SIZE), data.DataLoader([tuple(map(self.sent_into_numeric,item)) for item in pairs[-test_pos:]],batch_size=BATCH_SIZE)
-            
+
+def sample_sentences(pairs_):
+    random.seed(SEED)
+    pairs = [item for item in pairs_] # copy
+    random.shuffle(pairs)
+
+        # set idx
+    test_pos = int(len(pairs)*TEST_RATIO)
+    tr_sents = np.array(pairs)[np.random.randint(0,test_pos, 10)]
+    ts_sents = np.array(pairs)[np.random.randint(test_pos, len(pairs), 10)]
+
+    return tr_sents.tolist(), ts_sents.tolist()
+
+
 def indexesFromSentence(dictionary, sentence):
     for k,v in KOREAN_2_SPECIAL.items(): # replace special tokens
         sentence = sentence.replace(k,v)
@@ -139,3 +146,9 @@ def showPlot(points):
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
     
+def print_result(inference_list, x_y_pair_list):
+    for y_hat, x_y_pair in zip(inference_list, x_y_pair_list):
+        print('x : {}'.format(x_y_pair[0]),
+            'y_hat : {}'.format(y_hat),
+            'y : {}'.format(x_y_pair[1]),'-'*30, sep='\n')
+

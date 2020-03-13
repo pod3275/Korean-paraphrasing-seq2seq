@@ -1,64 +1,41 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 25 16:04:48 2020
-
-@author: 이상헌
-"""
-
 from __future__ import unicode_literals, print_function, division
 import random
 
 from utils import tensorFromSentence
 import torch
 
-SOS_token = 0
-EOS_token = 1
-MAX_LENGTH = 100
-    
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#custom modules
+from utils import *
+from config import *
 
-def evaluate(encoder, decoder, sentence, dictionary, max_length=MAX_LENGTH):
+    
+def infer_sentence(encoder, decoder, sentences, dictionary):
+    # sentences : list of sentences to infer
+
     with torch.no_grad():
-        input_tensor = tensorFromSentence(dictionary, sentence)
-        input_length = input_tensor.size()[0]
-        encoder_hidden = encoder.initHidden()
+        input_tensor = [tensorFromSentence(dictionary, sent) for sent in sentences]
+        
+        # input sentence padding / trimming
+        for i, ts in enumerate(input_tensor):
+            if ts.size(0) >= MAX_SEQ_LEN : input_tensor[i] = ts[:MAX_SEQ_LEN]
+            else: input_tensor[i] = torch.cat((ts, torch.empty(MAX_SEQ_LEN - ts.size(0), dtype=torch.long).fill_(PAD_token)), 0)
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+        input_tensor = torch.stack(input_tensor, dim = 0)
 
-        for ei in range(input_length):
-            encoder_output, encoder_hidden = encoder(input_tensor[ei],
-                                                     encoder_hidden)
-            encoder_outputs[ei] += encoder_output[0, 0]
+        
+        encoder_output, encoder_hidden = encoder(input_tensor)
+        decoder_input = torch.tensor([[SOS_token]+[PAD_token for _ in range(MAX_SEQ_LEN-1)] for _ in range(input_tensor.size(0))])
+        
+        for pos in range(MAX_SEQ_LEN-1):
+            decoder_output, decoder_attention = decoder(decoder_input, encoder_hidden, encoder_output)
+            decoder_input[:,pos+1] = decoder_output.max(2)[1][:,pos]
 
-        decoder_input = torch.tensor([[SOS_token]], device=device)  # SOS
+        ret = []
+        for d_o in decoder_input:
+            decoded_sent = ''.join([dictionary.index2token[item] for item in d_o.tolist()])
+            decoded_sent = decoded_sent.replace('▁',' ')
+            decoded_sent = decoded_sent.split('<eos>')[0] + ' <eos>'
+            ret.append(decoded_sent)
 
-        decoder_hidden = encoder_hidden
+        return ret
 
-        decoded_words = []
-        decoder_attentions = torch.zeros(max_length, max_length)
-
-        for di in range(max_length):
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
-            decoder_attentions[di] = decoder_attention.data
-            topv, topi = decoder_output.data.topk(1)
-            if topi.item() == EOS_token:
-                decoded_words.append('<EOS>')
-                break
-            else:
-                decoded_words.append(dictionary.index2token[topi.item()])
-
-            decoder_input = topi.squeeze().detach()
-
-        return decoded_words, decoder_attentions[:di + 1]
-    
-    
-def evaluateRandomly(encoder, decoder, pairs, dictionary, n=10):
-    for i in range(n):
-        pair = random.choice(pairs)
-        print('>', pair[0])
-        print('=', pair[1])
-        output_words, attentions = evaluate(encoder, decoder, pair[0], dictionary)
-        output_sentence = ' '.join(output_words)
-        print('<', output_sentence)
-        print('')

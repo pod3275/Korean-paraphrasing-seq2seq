@@ -5,7 +5,6 @@ import torch.nn as nn
 from torch import optim
 from utils import tensorsFromPair, timeSince, showPlot
 from math import ceil
-from eval import evaluateRandomly
 
 # custom module
 from config import *

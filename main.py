@@ -9,20 +9,21 @@ from train import *
 from eval import *
 from utils import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 file_name = "paraphrasing data_DH.xlsx"
 
 dictionary, pair_data = prepareData("kor", file_name)
 ld = Loader(dictionary, pair_data)
+sample_train_sentences, sample_test_sentences = sample_sentences(pair_data)
 embedtable = np.loadtxt("word_emb.txt", delimiter=" ", dtype='float32')
-special_embeddings = np.random.rand(len(SPECIAL_TOKENS), 128).astype('float32')
-embedtable = np.append(embedtable, special_embeddings, axis=0) 
+special_embeddings = np.concatenate((np.random.rand(len(SPECIAL_TOKENS)-1, 128).astype('float32'),
+	np.zeros((1,128), dtype=np.float32)), axis=0)
+embedtable = np.insert(embedtable, [2], special_embeddings, axis=0) 
 embedtable = torch.from_numpy(embedtable).float()
 
 
-enc = Encoder(embedtable).to(device)
-dec = AttnDecoder(embedtable).to(device)
+enc = Encoder(embedtable).to(DEVICE)
+dec = AttnDecoder(embedtable).to(DEVICE)
 
 encoder_optim = Adam(enc.parameters(), lr = LEARNING_RATE)
 decoder_optim = Adam(dec.parameters(), lr = LEARNING_RATE)
@@ -31,6 +32,11 @@ criterion = nn.NLLLoss()
 for e in range(NUM_EPOCH):
 	loss = train_epoch(ld.train, enc, dec, encoder_optim, decoder_optim, criterion)
 	sys.stdout.write('EPOCH {} - loss : {}\r'.format(e+1,loss))
-	# if (e+1) % == 0: 
-		# evaluateRandomly()
+	if (e+1) % SAMPLE_TEST_EVERY == 0: 
+		tr_infer = infer_sentence(enc, dec, [item[0] for item in sample_train_sentences], dictionary) # train infer
+		ts_infer = infer_sentence(enc, dec, [item[0] for item in sample_test_sentences], dictionary) # test infer
+		print('='*10,'Train set inference', '='*10)
+		print_result(tr_infer, sample_train_sentences)
+		print('='*10,'Test set inference', '='*10)
+		print_result(ts_infer, sample_test_sentences)
 
