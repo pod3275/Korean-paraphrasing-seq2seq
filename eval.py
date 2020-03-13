@@ -11,6 +11,8 @@ from config import *
     
 def infer_sentence(encoder, decoder, sentences, dictionary):
     # sentences : list of sentences to infer
+    encoder.eval()
+    decoder.eval()
 
     with torch.no_grad():
         input_tensor = [tensorFromSentence(dictionary, sent) for sent in sentences]
@@ -20,11 +22,11 @@ def infer_sentence(encoder, decoder, sentences, dictionary):
             if ts.size(0) >= MAX_SEQ_LEN : input_tensor[i] = ts[:MAX_SEQ_LEN]
             else: input_tensor[i] = torch.cat((ts, torch.empty(MAX_SEQ_LEN - ts.size(0), dtype=torch.long).fill_(PAD_token)), 0)
 
-        input_tensor = torch.stack(input_tensor, dim = 0)
+        input_tensor = torch.stack(input_tensor, dim = 0).to(DEVICE)
 
         
         encoder_output, encoder_hidden = encoder(input_tensor)
-        decoder_input = torch.tensor([[SOS_token]+[PAD_token for _ in range(MAX_SEQ_LEN-1)] for _ in range(input_tensor.size(0))])
+        decoder_input = torch.tensor([[SOS_token]+[PAD_token for _ in range(MAX_SEQ_LEN-1)] for _ in range(input_tensor.size(0))]).to(DEVICE)
         
         for pos in range(MAX_SEQ_LEN-1):
             decoder_output, decoder_attention = decoder(decoder_input, encoder_hidden, encoder_output)

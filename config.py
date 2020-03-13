@@ -3,7 +3,7 @@ import torch
 BATCH_SIZE= 32 
 TEST_RATIO = 0.15
 SEED = 20200311
-MAX_SEQ_LEN = 50
+MAX_SEQ_LEN = 100
 USE_TEACHER_FORCING = True
 SOS_token = 0
 EOS_token = 1
@@ -14,7 +14,8 @@ DROPOUT = 0.2
 WORD_DIM = 128
 NUM_LAYER = 1
 LEARNING_RATE= 0.01
-NUM_EPOCH = 100
+NUM_EPOCH = 10000
+NUM_SAMPLE = 1
 
 
 SPECIAL_TOKENS = ['<EXPR>','<UNVAR>','<EQUL>', '<ARRW>','<PAD>']
@@ -27,5 +28,5 @@ SPECIAL_2_ENG = dict(zip(['\N{Arabic Poetic Verse Sign}',
 					 '\N{Arabic Place of Sajdah}',
 					 '\N{Arabic Sign Sindhi Ampersand}'], SPECIAL_TOKENS[:4]))
 
-SAMPLE_TEST_EVERY = 2
+SAMPLE_TEST_EVERY = 100
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

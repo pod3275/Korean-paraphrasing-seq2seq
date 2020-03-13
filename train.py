@@ -13,6 +13,8 @@ from config import *
 
 
 def train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion):
+    encoder.train()
+    decoder.train()
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
@@ -25,7 +27,7 @@ def train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optim
         bsz_ = batch[0].size(0) # get batch size
         batch = [ele.to(DEVICE) for ele in batch] # mount tensors to device
         encoder_output, encoder_hidden = encoder(batch[0])
-        decoder_input = torch.cat((torch.tensor([[SOS_token] for _ in range(bsz_)]),
+        decoder_input = torch.cat((torch.tensor([[SOS_token] for _ in range(bsz_)]).to(DEVICE),
             batch[1][:,:MAX_SEQ_LEN-1])
             , dim=1)
 

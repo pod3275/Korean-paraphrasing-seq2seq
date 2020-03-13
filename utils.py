@@ -69,8 +69,8 @@ def sample_sentences(pairs_):
 
         # set idx
     test_pos = int(len(pairs)*TEST_RATIO)
-    tr_sents = np.array(pairs)[np.random.randint(0,test_pos, 10)]
-    ts_sents = np.array(pairs)[np.random.randint(test_pos, len(pairs), 10)]
+    tr_sents = np.array(pairs)[np.random.randint(0,test_pos, NUM_SAMPLE)]
+    ts_sents = np.array(pairs)[np.random.randint(test_pos, len(pairs), NUM_SAMPLE)]
 
     return tr_sents.tolist(), ts_sents.tolist()
 

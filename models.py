@@ -9,6 +9,7 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.emb = nn.Embedding(*embedtable.shape)
         self.emb.weight.data.copy_(embedtable)
+        self.emb.weight.requires_grad = False
         self.gru = nn.GRU(WORD_DIM, HIDDEN_DIM, batch_first=True)
         self.hidden = nn.Parameter(self.initHidden())
         
@@ -19,7 +20,7 @@ class Encoder(nn.Module):
         return output, hidden
     
     def initHidden(self):
-        return torch.zeros(NUM_LAYER*(int(BIDIRECTIONAL)+1), BATCH_SIZE, HIDDEN_DIM)
+        return torch.zeros(NUM_LAYER*(int(BIDIRECTIONAL)+1), BATCH_SIZE, HIDDEN_DIM).to(DEVICE)
             
     
 class AttnDecoder(nn.Module):
@@ -28,6 +29,7 @@ class AttnDecoder(nn.Module):
         self.vocab_size = embedtable.shape[0]
         self.emb = nn.Embedding(*embedtable.shape)
         self.emb.weight.data.copy_(embedtable)
+        self.emb.weight.requires_grad = False
         self.attn = nn.Linear(HIDDEN_DIM * 2, MAX_SEQ_LEN)
         self.attn_combine = nn.Linear(HIDDEN_DIM * 2, HIDDEN_DIM)
         self.dropout = nn.Dropout(DROPOUT)
@@ -40,7 +42,7 @@ class AttnDecoder(nn.Module):
         bsz_ = input_.size(0)
         x = self.emb(input_)
         embedded = self.dropout(x)
-        attn_weights = F.softmax(self.attn(torch.cat((embedded, encoder_hidden.permute([1,0,2]).expand(-1,50,-1)[:bsz_]), 2)), dim=1)
+        attn_weights = F.softmax(self.attn(torch.cat((embedded, encoder_hidden.permute([1,0,2]).expand(-1,MAX_SEQ_LEN,-1)[:bsz_]), 2)), dim=1)
         attn_applied = torch.bmm(attn_weights,encoder_outputs) # batch x MAX_SEQ_LEN x HIDDEN_DIM
         output = torch.cat((embedded, attn_applied), 2)
         output = self.attn_combine(output)
