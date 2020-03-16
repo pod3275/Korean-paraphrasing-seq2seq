@@ -16,14 +16,14 @@ class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, embedtable):
         super(Encoder, self).__init__()
         self.hidden_size = hidden_size
-        self.embedtable = torch.from_numpy(embedtable)
-        # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-#        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.embedtable = nn.Embedding(*embedtable.shape)
+        self.embedtable.weight.data.copy_(embedtable)
         self.gru = nn.GRU(hidden_size, hidden_size)
         
     def forward(self, input, hidden):
         # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-        embedded = self.embedtable[input, :].view(1, -1) # view=reshape
+        
+        embedded = self.embedtable(input) # view=reshape
         output = torch.unsqueeze(embedded, 0)
         if device.type == 'cuda':
             output = output.cuda()
@@ -63,7 +63,8 @@ class AttnDecoder(nn.Module):
         self.output_size = output_size
         self.dropout_p = dropout_p
         self.max_length = max_length
-        self.embedtable = torch.from_numpy(embedtable)
+        self.embedtable = nn.Embedding(*embedtable.shape)
+        self.embedtable.weight.data.copy_(embedtable)
 
         # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
 #        self.embedding = nn.Embedding(self.output_size, self.hidden_size)
@@ -75,8 +76,14 @@ class AttnDecoder(nn.Module):
 
     def forward(self, input, hidden, encoder_outputs):
         # embedding함수 --> lookup table에서 찾는 걸로 바꾸기
-        embedded = self.embedtable[input, :].view(1, -1)
-        embedded = torch.unsqueeze(embedded, 0)
+        # print(input.size())
+        if input.dim() == 1 : 
+            input = input.unsqueeze(0)
+        elif input.dim() == 0:
+            input = torch.tensor([[input]]).long()
+
+        embedded = self.embedtable(input)
+
         embedded = self.dropout(embedded)
 
         if device.type == 'cuda':

@@ -13,7 +13,8 @@ import numpy as np
 from models import Encoder, AttnDecoder
 from train import trainIters
 from eval import evaluateRandomly
-from utils import prepareData
+from utils import *
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -21,7 +22,10 @@ file_name = "paraphrasing data_DH.xlsx"
 
 dictionary, pair_data = prepareData("kor", file_name)
 embedtable = np.loadtxt("word_emb.txt", delimiter=" ", dtype='float32')
-embedtable = np.append(embedtable, np.random.rand(1, 128).astype('float32'), axis=0) # '<EQ>'
+special_embeddings = np.concatenate((np.random.rand(len(SPECIAL_TOKENS)-1, 128).astype('float32'),
+	np.zeros((1,128), dtype=np.float32)), axis=0)
+embedtable = np.insert(embedtable, [2], special_embeddings, axis=0) 
+embedtable = torch.from_numpy(embedtable).float()
 
 
 encoder = Encoder(dictionary.n_tokens, 128, embedtable).to(device)

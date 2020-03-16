@@ -18,13 +18,24 @@ plt.switch_backend('agg')
 import matplotlib.ticker as ticker
 from kobert.utils import get_tokenizer
 
+from utils import *
+
 
 SOS_token = 0
 EOS_token = 1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-tok_path = get_tokenizer()
-sp  = SentencepieceTokenizer(tok_path)
-    
+
+
+SPECIAL_TOKENS = ['<EXPR>','<UNVAR>','<EQUL>', '<ARRW>','<PAD>']
+KOREAN_2_SPECIAL = {'(수식)':'\N{Arabic Poetic Verse Sign}',
+                     '(미지수)':'\N{Arabic Sign Misra}' ,
+                     '(화살표)':'\N{Arabic Place of Sajdah}',
+                     '(등호)':'\N{Arabic Sign Sindhi Ampersand}'}
+SPECIAL_2_ENG = dict(zip(['\N{Arabic Poetic Verse Sign}',
+                     '\N{Arabic Sign Misra}' ,
+                     '\N{Arabic Place of Sajdah}',
+                     '\N{Arabic Sign Sindhi Ampersand}'], SPECIAL_TOKENS[:4]))
+
             
 class Dictionary:
     def __init__(self, name):
@@ -32,37 +43,28 @@ class Dictionary:
         self.token2index = {}
         self.index2token = {} 
         self.n_tokens = 0
+        tok_path = get_tokenizer()
+        self.sp = SentencepieceTokenizer(tok_path) 
                       
     def addSentence(self, sentence):
-        for token in sp(sentence):
+        for token in self.sp(sentence):
             self.addToken(token)
         
     def generateIdx(self):
         with open("word_list.txt", "r", encoding="UTF8") as f:
-            for num, token in enumerate(f):
-                token = token.strip()
-                self.index2token[num] = token
-                self.token2index[token] = num
-                self.n_tokens+=1
-            
-        self.index2token[self.n_tokens] = '<EQ>'
-        self.token2index['<EQ>'] = self.n_tokens
-        self.n_tokens+=1
+            self.index2token = [tok.strip() for tok in f]
+        self.index2token[2:2] = SPECIAL_TOKENS
+        self.token2index = {v : k for k,v in enumerate(self.index2token)}
+        self.n_tokens = len(self.index2token)
                 
             
 def indexesFromSentence(dictionary, sentence):
-    tokens = [token for token in sp(sentence)]
-    new_tokens = []
-    i=0
-    while i<len(tokens):
-        if i < len(tokens)-3 and (tokens[i] == '▁(' or tokens[i] == '(') and tokens[i+1] == '수' and tokens[i+2] == '식' and tokens[i+3] == ')':
-            new_tokens.append('<EQ>')
-            i= i+4
-        else:
-            new_tokens.append(tokens[i])
-            i+=1
-    
-    return [dictionary.token2index[token] for token in new_tokens]
+    for k,v in KOREAN_2_SPECIAL.items(): # replace special tokens
+        sentence = sentence.replace(k,v)
+    tokens = [token for token in dictionary.sp(sentence)]
+    tokens = [SPECIAL_2_ENG[ele] if ele in SPECIAL_2_ENG else ele for ele in tokens]
+    # print(tokens)
+    return [dictionary.token2index[token] for token in tokens]
 
 
 def tensorFromSentence(dictionary, sentence):
