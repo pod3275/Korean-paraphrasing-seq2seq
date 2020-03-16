@@ -15,10 +15,9 @@ from train import trainIters
 from eval import evaluateRandomly
 from utils import *
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-file_name = "paraphrasing data_DH.xlsx"
+file_name = "new_data.xlsx"
 
 dictionary, pair_data = prepareData("kor", file_name)
 embedtable = np.loadtxt("word_emb.txt", delimiter=" ", dtype='float32')
@@ -34,3 +33,6 @@ attndecoder = AttnDecoder(128, dictionary.n_tokens, embedtable, dropout_p=0.1).t
 trainIters(encoder, attndecoder, dictionary, pair_data, epochs=100)
 
 evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=10)
+
+
+'0.0' in dictionary.token2index.keys()

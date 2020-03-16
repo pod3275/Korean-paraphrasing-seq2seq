@@ -43,8 +43,9 @@ class Dictionary:
         self.token2index = {}
         self.index2token = {} 
         self.n_tokens = 0
-        tok_path = get_tokenizer()
-        self.sp = SentencepieceTokenizer(tok_path) 
+#        tok_path = get_tokenizer()
+        tok_path = "C:/KoBERT/kobert_news_wiki_ko_cased-1087f8699e.spiece"
+        self.sp = SentencepieceTokenizer(tok_path)
                       
     def addSentence(self, sentence):
         for token in self.sp(sentence):
