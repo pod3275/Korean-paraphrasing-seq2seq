@@ -53,12 +53,15 @@ def evaluate(encoder, decoder, sentence, dictionary, max_length=MAX_LENGTH):
         return decoded_words, decoder_attentions[:di + 1]
     
     
-def evaluateRandomly(encoder, decoder, pairs, dictionary, n=10):
+def evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=10):
     for i in range(n):
         pair = random.choice(pairs)
         print('>', pair[0])
+        fp.write('> ' + pair[0] + '\n')
         print('=', pair[1])
+        fp.write('>= ' + pair[1] + '\n')
         output_words, attentions = evaluate(encoder, decoder, pair[0], dictionary)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
+        fp.write('< ' + output_sentence + '\n\n')
         print('')
