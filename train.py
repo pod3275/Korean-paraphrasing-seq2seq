@@ -21,6 +21,7 @@ EOS_token = 1
 MAX_LENGTH = 100
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+fp = open("results.txt", "w", encoding='utf-8')
 
 # 이전 train
 # def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
@@ -166,8 +167,15 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
 
             print('%s epochs, %s step, %.4f' % (e, batch_size*b+num_data, loss))
             
+            if b == int(num_batch/2):
+                print('\n%.1f epochs, %.4f' % (e+0.5, print_loss_total / (int(num_batch/2)+1)))
+                fp.write('\n%.1f epochs, %.4f \n' % (e+0.5, print_loss_total / (int(num_batch/2)+1)))
+                evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=print_examples)
+
+            
         print_loss_avg = print_loss_total / num_batch
         print('%s epochs, %.4f' % (e, print_loss_avg))
+        fp.write('\n%s epochs, %.4f \n' % (e, print_loss_avg))
         
 
         # for iter in range(1, len(pairs) + 1):
@@ -190,10 +198,12 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
         
         # 매 epoch 마다 출력
         
-        evaluateRandomly(encoder, decoder, pairs, dictionary, n=print_sentences)
+        evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=print_sentences)
         
         #plot_loss_avg = plot_loss_total / plot_every
         #plot_losses.append(plot_loss_avg)
         #plot_loss_total = 0
     
         #showPlot(plot_losses)
+        
+    fp.close()
