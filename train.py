@@ -14,13 +14,8 @@ from utils import tensorsFromPair, timeSince, showPlot
 from math import ceil
 from eval import evaluateRandomly
 
-teacher_forcing_ratio = 0.5
+from config import *
 
-SOS_token = 0
-EOS_token = 1
-MAX_LENGTH = 100
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 이전 train
 # def train(input_tensor, target_tensor, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, max_length=MAX_LENGTH):
@@ -32,7 +27,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #     input_length = input_tensor.size(0)
 #     target_length = target_tensor.size(0)
 
-#     encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+#     encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=DEVICE)
 
 #     loss = 0
 
@@ -41,7 +36,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #             input_tensor[ei], encoder_hidden)
 #         encoder_outputs[ei] = encoder_output[0, 0]
 
-#     decoder_input = torch.tensor([[SOS_token]], device=device)
+#     decoder_input = torch.tensor([[SOS_TOKEN]], device=DEVICE)
 
 #     decoder_hidden = encoder_hidden
 
@@ -64,7 +59,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #             decoder_input = topi.squeeze().detach()  # 입력으로 사용할 부분을 히스토리에서 분리
 
 #             loss += criterion(decoder_output, target_tensor[di])
-#             if decoder_input.item() == EOS_token:
+#             if decoder_input.item() == EOS_TOKEN:
 #                 break
 
 #     loss.backward()
@@ -91,18 +86,18 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
         input_length = input_tensor.size(0)
         target_length = target_tensor.size(0)
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=DEVICE)
 
         for ei in range(input_length):
             encoder_output, encoder_hidden = encoder(
                 input_tensor[ei], encoder_hidden)
             encoder_outputs[ei] = encoder_output[0, 0]
 
-        decoder_input = torch.tensor([[SOS_token]], device=device)
+        decoder_input = torch.tensor([[SOS_TOKEN]], device=DEVICE)
 
         decoder_hidden = encoder_hidden
 
-        use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
+        use_teacher_forcing = True if random.random() < TEACHER_FORCING_RATIO else False
 
         if use_teacher_forcing:
             # Teacher forcing 포함: 목표를 다음 입력으로 전달
@@ -121,7 +116,7 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
                 decoder_input = topi.squeeze().detach()  # 입력으로 사용할 부분을 히스토리에서 분리
 
                 loss += criterion(decoder_output, target_tensor[di])
-                if decoder_input.item() == EOS_token:
+                if decoder_input.item() == EOS_TOKEN:
                     break
         
         target_length_total+=target_length
@@ -134,11 +129,9 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
     return loss.item() / target_length_total
 
 
-def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, print_sentences=5, learning_rate=0.01, batch_size=16):#?
+def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, print_examples=5, learning_rate=0.01, batch_size=32):#?
     start = time.time()
-    plot_losses = []
     print_loss_total = 0  # print_every 마다 초기화
-    plot_loss_total = 0  # plot_every 마다 초기화
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
@@ -166,8 +159,14 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
 
             print('%s epochs, %s step, %.4f' % (e, batch_size*b+num_data, loss))
             
+            if b == int(num_batch/2):
+                print('\n%.1f epochs, %.4f' % (e/2, print_loss_total / (int(num_batch/2)+1)))
+                fp.write('\n%.1f epochs, %.4f \n' % (e/2, print_loss_total / (int(num_batch/2)+1)))
+                evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=print_examples)
+                
         print_loss_avg = print_loss_total / num_batch
         print('%s epochs, %.4f' % (e, print_loss_avg))
+        fp.write('\n%s epochs, %.4f \n' % (e, print_loss_avg))
         
 
         # for iter in range(1, len(pairs) + 1):
@@ -190,10 +189,12 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
         
         # 매 epoch 마다 출력
         
-        evaluateRandomly(encoder, decoder, pairs, dictionary, n=print_sentences)
+        evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=print_examples)
         
         #plot_loss_avg = plot_loss_total / plot_every
         #plot_losses.append(plot_loss_avg)
         #plot_loss_total = 0
     
         #showPlot(plot_losses)
+        
+    fp.close()

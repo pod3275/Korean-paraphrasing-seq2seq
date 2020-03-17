@@ -7,30 +7,24 @@ Created on Tue Feb 25 16:04:48 2020
 
 from __future__ import unicode_literals, print_function, division
 import random
-
 from utils import tensorFromSentence
 import torch
-
-SOS_token = 0
-EOS_token = 1
-MAX_LENGTH = 100
+from config import *
     
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 def evaluate(encoder, decoder, sentence, dictionary, max_length=MAX_LENGTH):
     with torch.no_grad():
         input_tensor = tensorFromSentence(dictionary, sentence)
         input_length = input_tensor.size()[0]
         encoder_hidden = encoder.initHidden()
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=DEVICE)
 
         for ei in range(input_length):
             encoder_output, encoder_hidden = encoder(input_tensor[ei],
                                                      encoder_hidden)
             encoder_outputs[ei] += encoder_output[0, 0]
 
-        decoder_input = torch.tensor([[SOS_token]], device=device)  # SOS
+        decoder_input = torch.tensor([[SOS_TOKEN]], device=DEVICE)  # SOS
 
         decoder_hidden = encoder_hidden
 
@@ -42,7 +36,7 @@ def evaluate(encoder, decoder, sentence, dictionary, max_length=MAX_LENGTH):
                 decoder_input, decoder_hidden, encoder_outputs)
             decoder_attentions[di] = decoder_attention.data
             topv, topi = decoder_output.data.topk(1)
-            if topi.item() == EOS_token:
+            if topi.item() == EOS_TOKEN:
                 decoded_words.append('<EOS>')
                 break
             else:
@@ -53,12 +47,15 @@ def evaluate(encoder, decoder, sentence, dictionary, max_length=MAX_LENGTH):
         return decoded_words, decoder_attentions[:di + 1]
     
     
-def evaluateRandomly(encoder, decoder, pairs, dictionary, n=10):
+def evaluateRandomly(encoder, decoder, pairs, dictionary, fp, n=10):
     for i in range(n):
         pair = random.choice(pairs)
         print('>', pair[0])
+        fp.write('> ' + pair[0] + '\n')
         print('=', pair[1])
+        fp.write('>= ' + pair[1] + '\n')
         output_words, attentions = evaluate(encoder, decoder, pair[0], dictionary)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
+        fp.write('< ' + output_sentence + '\n\n')
         print('')

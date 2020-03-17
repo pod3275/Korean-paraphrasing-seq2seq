@@ -47,6 +47,7 @@ data_length = 0
 #print("time :", time.time()-start, "seconds")
 ##len(data2['train_x'])
 
+
 # method 2-----------------------------------------------
 data = {}
 start = time.time()

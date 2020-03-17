@@ -12,27 +12,28 @@ import numpy as np
 
 from models import Encoder, AttnDecoder
 from train import trainIters
-from eval import evaluateRandomly
+from eval import evaluateRandomly, evaluate
 from utils import *
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from config import *
 
 file_name = "new_data.xlsx"
 
-dictionary, pair_data = prepareData("kor", file_name)
+dictionary, pair_data = prepareData("kor", file_name, artif_token=True)
 embedtable = np.loadtxt("word_emb.txt", delimiter=" ", dtype='float32')
 special_embeddings = np.concatenate((np.random.rand(len(SPECIAL_TOKENS)-1, 128).astype('float32'),
 	np.zeros((1,128), dtype=np.float32)), axis=0)
-embedtable = np.insert(embedtable, [2], special_embeddings, axis=0) 
+embedtable = np.insert(embedtable, [2], special_embeddings, axis=0)
 embedtable = torch.from_numpy(embedtable).float()
 
+encoder = Encoder(dictionary.n_tokens, 128, embedtable).to(DEVICE)
+attndecoder = AttnDecoder(128, dictionary.n_tokens, embedtable, dropout_p=DROPOUT_RATIO).to(DEVICE)
 
-encoder = Encoder(dictionary.n_tokens, 128, embedtable).to(device)
-attndecoder = AttnDecoder(128, dictionary.n_tokens, embedtable, dropout_p=0.1).to(device)
+trainIters(encoder, attndecoder, dictionary, 
+           pair_data, epochs=NUM_EPOCH, batch_size=BATCH_SIZE,
+           print_examples = PRINT_EXAMPLES)
 
-trainIters(encoder, attndecoder, dictionary, pair_data, epochs=100)
+evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=PRINT_EXAMPLES)
 
-evaluateRandomly(encoder, attndecoder, pair_data, dictionary, n=10)
-
-
-'0.0' in dictionary.token2index.keys()
+sentence = "(문어체) 수량 사이의 관계를 파악하여 이차방정식으로 나타낸다."
+print('>', sentence)
+decoded_words, _ = evaluate(encoder, attndecoder, sentence, dictionary)

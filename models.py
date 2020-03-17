@@ -8,9 +8,7 @@ Created on Tue Feb 25 15:38:35 2020
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MAX_LENGTH = 100
+from config import *
 
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, embedtable):
@@ -25,13 +23,13 @@ class Encoder(nn.Module):
         
         embedded = self.embedtable(input) # view=reshape
         output = torch.unsqueeze(embedded, 0)
-        if device.type == 'cuda':
+        if DEVICE.type == 'cuda':
             output = output.cuda()
         output, hidden = self.gru(output, hidden)
         return output, hidden
     
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+        return torch.zeros(1, 1, self.hidden_size, device=DEVICE)
     
     
 #class Decoder(nn.Module):
@@ -53,7 +51,7 @@ class Encoder(nn.Module):
 #        output = self.softmax(self.out(output[0]))
 #        
 #    def initHidden(self):
-#        return torch.zeros(1, 1, self.hidden_size, device=device)
+#        return torch.zeros(1, 1, self.hidden_size, device=DEVICE)
         
     
 class AttnDecoder(nn.Module):
@@ -82,11 +80,12 @@ class AttnDecoder(nn.Module):
         elif input.dim() == 0:
             input = torch.tensor([[input]]).long()
 
+        input = input.to(DEVICE)
         embedded = self.embedtable(input)
 
         embedded = self.dropout(embedded)
 
-        if device.type == 'cuda':
+        if DEVICE.type == 'cuda':
             embedded = embedded.cuda()
             
         attn_weights = F.softmax(
@@ -104,4 +103,4 @@ class AttnDecoder(nn.Module):
         return output, hidden, attn_weights
 
     def initHidden(self):
-        return torch.zeros(1, 1, self.hidden_size, device=device)
+        return torch.zeros(1, 1, self.hidden_size, device=DEVICE)
