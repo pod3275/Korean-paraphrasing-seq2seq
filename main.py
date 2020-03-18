@@ -10,7 +10,7 @@ from eval import *
 from utils import *
 
 
-file_name = "paraphrasing data_DH.xlsx"
+file_name = "new_data.xlsx"
 
 dictionary, pair_data = prepareData("kor", file_name)
 ld = Loader(dictionary, pair_data)
@@ -26,7 +26,7 @@ dec = AttnDecoder(embedtable).to(DEVICE)
 
 encoder_optim = Adam(enc.parameters(), lr = LEARNING_RATE)
 decoder_optim = Adam(dec.parameters(), lr = LEARNING_RATE)
-criterion = nn.NLLLoss()
+criterion = nn.NLLLoss(reduction='none')
 
 for e in range(NUM_EPOCH):
 	loss = train_epoch(ld.train, enc, dec, encoder_optim, decoder_optim, criterion)

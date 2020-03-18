@@ -12,7 +12,7 @@ from eval import *
 
 
 def test_loader():
-	file_name = "paraphrasing data_DH.xlsx"
+	file_name = "new_data.xlsx"
 	dictionary, pair_data = prepareData("kor", file_name)
 	ld = Loader(dictionary, pair_data)
 
