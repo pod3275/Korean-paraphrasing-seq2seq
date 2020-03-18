@@ -99,7 +99,7 @@ class AttnDecoder(nn.Module):
         context = self.get_context(e_tokens,encoder_outputs, alphas)
         # print(alphas)
         # print(e_tokens.size(), alphas.size())
-        copy_prob = torch.zeros(1,output_prob.size(1)).to(device).scatter(1, e_tokens.permute([1,0]), alphas.permute([1,0]))
+        copy_prob = torch.zeros(1,output_prob.size(1)).to(device).scatter_add(1, e_tokens.permute([1,0]), alphas.permute([1,0]))
         # print(copy_prob)
 
         # print(output.size(), encoder_outputs.size(), context.size(), embedded.size())
@@ -107,7 +107,10 @@ class AttnDecoder(nn.Module):
         mix_ratio = self.do_gen(torch.cat([output[-1,-1,:], context, embedded.squeeze(0).squeeze(0)],dim=0))
 
 
-        prob = output_prob*mix_ratio + copy_prob*(1-mix_ratio)
+        prob = output_prob*mix_ratio 
+        # print(prob.size())
+        # exit()
+        prob[0,e_tokens[:,0]] += alphas.squeeze(1)*(1-mix_ratio)
 
 
         return prob, hidden, attn_weights

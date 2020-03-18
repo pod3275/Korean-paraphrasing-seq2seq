@@ -75,7 +75,7 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
         
         target_length_total+=target_length
 
-    loss.backward()
+    (loss/len(input_tensors)).backward()
 
     encoder_optimizer.step()
     decoder_optimizer.step()
@@ -83,7 +83,7 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
     return loss.item() / target_length_total
 
 
-def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, print_sentences=5, learning_rate=0.01, batch_size=16):#?
+def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, print_sentences=5, learning_rate=0.1, batch_size=16):#?
     start = time.time()
     plot_losses = []
     print_loss_total = 0  # print_every 마다 초기화
