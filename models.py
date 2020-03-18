@@ -72,7 +72,7 @@ class AttnDecoder(nn.Module):
         if input.dim() == 1 : 
             input = input.unsqueeze(0)
         elif input.dim() == 0:
-            input = torch.tensor([[input]]).long()
+            input = torch.tensor([[input]]).long().to(device)
 
         embedded = self.embedtable(input)
 
@@ -99,15 +99,12 @@ class AttnDecoder(nn.Module):
         context = self.get_context(e_tokens,encoder_outputs, alphas)
         # print(alphas)
         # print(e_tokens.size(), alphas.size())
-        copy_prob = torch.zeros(1,output_prob.size(1)).scatter(1, e_tokens.permute([1,0]), alphas.permute([1,0]))
+        copy_prob = torch.zeros(1,output_prob.size(1)).to(device).scatter(1, e_tokens.permute([1,0]), alphas.permute([1,0]))
         # print(copy_prob)
 
         # print(output.size(), encoder_outputs.size(), context.size(), embedded.size())
         # exit()
         mix_ratio = self.do_gen(torch.cat([output[-1,-1,:], context, embedded.squeeze(0).squeeze(0)],dim=0))
-
-        print(mix_ratio.size())
-        exit()
 
 
         prob = output_prob*mix_ratio + copy_prob*(1-mix_ratio)

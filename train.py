@@ -39,14 +39,14 @@ def train(input_tensors, target_tensors, encoder, decoder, encoder_optimizer, de
         input_length = input_tensor.size(0)
         target_length = target_tensor.size(0)
 
-        encoder_outputs = torch.zeros(max_length, encoder.hidden_size, device=device)
+        encoder_outputs = torch.zeros(max_length, encoder.hidden_size).to(device)
 
         for ei in range(input_length):
             encoder_output, encoder_hidden = encoder(
                 input_tensor[ei], encoder_hidden)
             encoder_outputs[ei] = encoder_output[0, 0]
 
-        decoder_input = torch.tensor([[SOS_token]], device=device)
+        decoder_input = torch.tensor([[SOS_token]]).to(device)
 
         decoder_hidden = encoder_hidden
 
@@ -105,8 +105,8 @@ def trainIters(encoder, decoder, dictionary, pairs, epochs, print_every=1000, pr
             else:
                 num_data = batch_size
                 
-            input_tensors = [training_pairs[m][0] for m in range(batch_size*b, batch_size*b+num_data)]
-            target_tensors = [training_pairs[m][1] for m in range(batch_size*b, batch_size*b+num_data)]
+            input_tensors = [training_pairs[m][0].to(device) for m in range(batch_size*b, batch_size*b+num_data)]
+            target_tensors = [training_pairs[m][1].to(device) for m in range(batch_size*b, batch_size*b+num_data)]
             
             loss = train(input_tensors, target_tensors, encoder,
                          decoder, encoder_optimizer, decoder_optimizer, criterion)
