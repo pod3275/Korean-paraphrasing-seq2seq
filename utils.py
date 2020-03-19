@@ -40,7 +40,7 @@ class Dictionary:
 
 class Loader:
     def __init__(self, dictionary, pairs):
-        PAD_token = dictionary.n_tokens + (SPECIAL_TOKENS.index('<PAD>') - len(SPECIAL_TOKENS))
+        # PAD_token = dictionary.n_tokens + (SPECIAL_TOKENS.index('<PAD>') - len(SPECIAL_TOKENS))
         self.pad = lambda x: torch.cat([x, torch.empty(MAX_SEQ_LEN - x.size(0), dtype=torch.long).fill_(PAD_token)], dim = 0)
         self.trim = lambda x: x[:MAX_SEQ_LEN].contiguous()
         self.dic_ = dictionary 
