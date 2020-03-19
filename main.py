@@ -26,7 +26,7 @@ dec = AttnDecoder(embedtable).to(DEVICE)
 
 encoder_optim = Adam(enc.parameters(), lr = LEARNING_RATE)
 decoder_optim = Adam(dec.parameters(), lr = LEARNING_RATE)
-criterion = nn.NLLLoss(reduction='none')
+criterion = nn.CrossEntropyLoss(reduction='none')
 
 for e in range(NUM_EPOCH):
 	loss = train_epoch(ld.train, enc, dec, encoder_optim, decoder_optim, criterion)

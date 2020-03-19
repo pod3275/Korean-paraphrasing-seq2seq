@@ -32,7 +32,7 @@ def train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optim
             , dim=1)
         # Teacher forcing 포함: 목표를 다음 입력으로 전달
         decoder_output, decoder_attention = decoder(
-            decoder_input, encoder_hidden, encoder_output)
+            decoder_input, batch[0], encoder_hidden, encoder_output)
 
         mask = ~torch.eq(batch[1], PAD_token*torch.ones(batch[1].size()))
         loss_tmp = criterion(decoder_output.view(-1,VOCAB_SIZE), batch[1].view(-1))

@@ -15,7 +15,7 @@ WORD_DIM = 128
 NUM_LAYER = 1
 LEARNING_RATE= 0.01
 NUM_EPOCH = 1000
-NUM_SAMPLE = 1
+NUM_SAMPLE = 3
 
 
 SPECIAL_TOKENS = ['<EXPR>','<UNVAR>','<EQUL>', '<ARRW>','<PAD>']
@@ -28,6 +28,6 @@ SPECIAL_2_ENG = dict(zip(['\N{Arabic Poetic Verse Sign}',
 					 '\N{Arabic Place of Sajdah}',
 					 '\N{Arabic Sign Sindhi Ampersand}'], SPECIAL_TOKENS[:4]))
 
-SAMPLE_TEST_EVERY = 100
+SAMPLE_TEST_EVERY = 10
 #DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE = torch.device("cpu")

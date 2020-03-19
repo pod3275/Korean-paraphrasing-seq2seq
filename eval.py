@@ -29,7 +29,7 @@ def infer_sentence(encoder, decoder, sentences, dictionary):
         decoder_input = torch.tensor([[SOS_token]+[PAD_token for _ in range(MAX_SEQ_LEN-1)] for _ in range(input_tensor.size(0))]).to(DEVICE)
         
         for pos in range(MAX_SEQ_LEN-1):
-            decoder_output, decoder_attention = decoder(decoder_input, encoder_hidden, encoder_output)
+            decoder_output, decoder_attention = decoder(decoder_input, input_tensor, encoder_hidden, encoder_output)
             decoder_input[:,pos+1] = decoder_output.max(2)[1][:,pos]
 
         ret = []
