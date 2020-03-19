@@ -26,7 +26,7 @@ EOS_token = 1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-SPECIAL_TOKENS = ['<EXPR>','<UNVAR>','<EQUL>', '<ARRW>','<PAD>']
+SPECIAL_TOKENS = ['<EXPR>', '<UNVAR>', '<ARRW>', '<EQUL>', '<PAD>']
 KOREAN_2_SPECIAL = {'(수식)':'\N{Arabic Poetic Verse Sign}',
                      '(미지수)':'\N{Arabic Sign Misra}' ,
                      '(화살표)':'\N{Arabic Place of Sajdah}',
