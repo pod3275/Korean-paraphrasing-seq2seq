@@ -20,7 +20,7 @@ def train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optim
 
     VOCAB_SIZE = encoder.emb.weight.size(0)
     loss = 0.
-    num_data = 0.
+    num_batch = 0.
 
     for batch in train_loader:
         bsz_ = batch[0].size(0) # get batch size
@@ -34,19 +34,17 @@ def train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optim
         decoder_output, decoder_attention = decoder(
             decoder_input, encoder_hidden, encoder_output)
 
-        mask = ~torch.eq(batch[1], (VOCAB_SIZE-1)*torch.ones(batch[1].size()))
+        mask = ~torch.eq(batch[1], PAD_token*torch.ones(batch[1].size()))
         loss_tmp = criterion(decoder_output.view(-1,VOCAB_SIZE), batch[1].view(-1))
         loss_tmp = loss_tmp*mask.view(-1)
-        loss_tmp = torch.sum(loss_tmp)/torch.sum(mask)
+        loss += loss_tmp.sum()/mask.sum()
 
-        loss += loss_tmp
-
-        num_data += batch[0].size(0)
+        num_batch += (bsz_/float(BATCH_SIZE))
 
     loss.backward()
 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item()/num_data
+    return loss.item()/num_batch
         
