@@ -30,7 +30,7 @@ criterion = nn.CrossEntropyLoss(reduction='none')
 
 for e in range(NUM_EPOCH):
 	loss = train_epoch(ld.train, enc, dec, encoder_optim, decoder_optim, criterion)
-	if (e+1) % (SAMPLE_TEST_EVERY//10) == 0 : 
+	if (e+1) % (SAMPLE_TEST_EVERY) == 0 : 
 		print('EPOCH {} - loss : {}\r'.format(e+1,loss))
 	if (e+1) % SAMPLE_TEST_EVERY == 0: 
 		sample_train_sentences, sample_test_sentences = sample_sentences(pair_data)

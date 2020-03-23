@@ -55,9 +55,12 @@ class AttnDecoder(nn.Module):
         # print(logits.size(), mask.size())
         # exit()
         # print(mask[0])
-        logits += ~mask.unsqueeze(1).repeat(1,MAX_SEQ_LEN,1)*(-1e3) # add extremely small numbers to masked values (masked softmax)
+        # logits += ~mask.unsqueeze(1).repeat(1,MAX_SEQ_LEN,1)*(-1e2) # add extremely small numbers to masked values (masked softmax)
+
         # print(logits[0])
-        alphas = F.softmax(logits, dim=2)
+        alphas = F.softmax(logits, dim=2) * mask.unsqueeze(1).repeat(1,MAX_SEQ_LEN,1) 
+        normal_const = alphas.sum(dim=2, keepdim=True)
+        alphas /= normal_const
         return alphas
 
     def get_context(self, e_tokens, e_states, alphas):
@@ -81,28 +84,15 @@ class AttnDecoder(nn.Module):
         alphas = self.get_alpha(encoder_inputs, encoder_outputs, output) 
         context = self.get_context(encoder_inputs, encoder_outputs, alphas)
         
-        # print(alphas[0].max(1))
-
-        # print(alphas.size(), context.size())
-        # exit()
-
-        # print(encoder_inputs.size(), alphas.size())
-        # exit()
-        copy_dist = torch.zeros(bsz_, MAX_SEQ_LEN, self.vocab_size).to(DEVICE).scatter_add(2, encoder_inputs.unsqueeze(2).repeat(1,1,MAX_SEQ_LEN), alphas)
-
-
-
-
-        # print(copy_dist[0].max(1))
-        # exit()
+        # copy_dist = torch.zeros(bsz_, MAX_SEQ_LEN, self.vocab_size).to(DEVICE)
 
         mix_ratio = self.do_gen(torch.cat([output, context, embedded],dim=2))
-        # print(mix_ratio.size(), generation_dist.size(), copy_dist.size())
-        # exit()
-        prob = generation_dist*mix_ratio +copy_dist*(1-mix_ratio)
+        prob = generation_dist*mix_ratio
 
-        # print(prob.sum(2))
-        # exit()
 
+        prob = prob.scatter_add(2, encoder_inputs.unsqueeze(2).repeat(1,1,MAX_SEQ_LEN), alphas*(1-mix_ratio))
+
+        # print(mix_ratio[:2,:,0])
+        
         return prob, attn_weights
 

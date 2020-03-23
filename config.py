@@ -21,13 +21,13 @@ NUM_SAMPLE = 3
 SPECIAL_TOKENS = ['<EXPR>','<UNVAR>','<EQUL>', '<ARRW>','<PAD>']
 KOREAN_2_SPECIAL = {'(수식)':'\N{Arabic Poetic Verse Sign}',
 					 '(미지수)':'\N{Arabic Sign Misra}' ,
-					 '(화살표)':'\N{Arabic Place of Sajdah}',
-					 '(등호)':'\N{Arabic Sign Sindhi Ampersand}'}
+					 '(등호)':'\N{Arabic Place of Sajdah}',
+					 '(화살표)':'\N{Arabic Sign Sindhi Ampersand}'}
 SPECIAL_2_ENG = dict(zip(['\N{Arabic Poetic Verse Sign}',
 					 '\N{Arabic Sign Misra}' ,
 					 '\N{Arabic Place of Sajdah}',
 					 '\N{Arabic Sign Sindhi Ampersand}'], SPECIAL_TOKENS[:4]))
 
-SAMPLE_TEST_EVERY = 10
+SAMPLE_TEST_EVERY = 1
 #DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DEVICE = torch.device("cpu")
