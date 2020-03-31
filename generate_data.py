@@ -12,7 +12,7 @@ from openpyxl import Workbook
 
 import re
 
-ENG_BRC_RGX = re.compile(r'[(][\w?.,~∼ :]+[)]')
+ENG_BRC_RGX = re.compile(r'[(][\w?.,~∼ :/]+[)]')
 STEP_RGX = re.compile(r'step|Step')
 EXCEPT_RGX = re.compile(r'[(][0-9]+[)]')
 EXCEPTIONS = ['(수식)','(미지수)','(등호)','(화살표)']
@@ -26,7 +26,12 @@ def clean_txt(txt):
         if r_ in EXCEPTIONS + except_rgx: continue
         txt = txt.replace(r_, '')
 
-    return txt
+    # E.g. '- 부호가 다른 수' --> '부호가 다른 수'
+    if txt != '':
+        if txt[0] == '-':
+            txt = txt[1:]
+
+    return txt.strip()
 
 def test_clean_txt():
     tcs = ['Step(수식)를 없애기 위하여 (1)에서 (2)를 변끼리 빼면',
@@ -50,7 +55,7 @@ def test_clean_txt():
 
 def main():
 
-    name = ["상효", "은지", "두희", "민경", "대한", "영근", "상헌", "근형"]
+    name = ["상효", "은지", "두희", "민경", "대한", "영근", "상헌", "근형", "형기"]
     data = {}
     data_length = 0
 
@@ -60,7 +65,7 @@ def main():
 
     for member in name:
         count = 0
-        df = pd.read_excel("한시에 데이터를 만들자.xlsx", sheet_name = member, 
+        df = pd.read_excel("Data/한시에 데이터를 만들자.xlsx", sheet_name = member, 
                            header=1, na_filter=False)
         for _, row in df.iterrows():
             data_text = [row[k] for k in df.keys() if k != '단위지식 type']
@@ -82,7 +87,7 @@ def main():
 
 
     # 300개 data 추가
-    df = pd.read_excel("paraphrasing data_DH.xlsx")
+    df = pd.read_excel("Data/paraphrasing data_DH.xlsx")
     for i in range(len(df)):
         train_x.append(clean_txt(df['train_x'][i]))
         train_y.append(clean_txt(df['train_y'][i]))
@@ -107,7 +112,7 @@ def main():
     for i in range(total_len):
         sheet1.append([train_x[i], train_y[i]])
         
-    wb.save(filename='Data/new_data.xlsx')
+    wb.save(filename='Data/paraphrase_data.xlsx')
 
 
 if __name__ == '__main__':
