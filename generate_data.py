@@ -12,19 +12,35 @@ from openpyxl import Workbook
 
 import re
 
-ENG_BRC_RGX = re.compile(r'[(][\w?.,~∼ :/]+[)]')
-# ENG_BRC_RGX = re.compile(r'[(].*?[)]')
+ENG_BRC_RGX = re.compile(r'[(].*?[)]')
 STEP_RGX = re.compile(r'step|Step')
 EXCEPT_RGX = re.compile(r'[(][0-9]+[)]')
+# 괄호 안에 한글만 들어있는 경우는 clean 하지 않음
+EXCEPT_KOREAN_RGX = re.compile(r'[(][\u3131-\u3163\uac00-\ud7a3 ]+[)]')
 EXCEPTIONS = ['(수식)','(미지수)','(등호)','(화살표)']
 
 def clean_txt(txt):
     eng_brc_rgx_ = ENG_BRC_RGX.findall(txt)
     step_rgx_ = STEP_RGX.findall(txt)
     except_rgx = EXCEPT_RGX.findall(txt)
+    except_korean_rgx = EXCEPT_KOREAN_RGX.findall(txt)
 
     for r_ in eng_brc_rgx_ + step_rgx_:
-        if r_ in EXCEPTIONS + except_rgx: continue
+        if r_ in except_rgx: continue
+
+        '''
+        r_ 안에 EXCEPTIONS이 포함 되어 있으면 continue
+        E.g. r_ is "(아하 (미지수)" -> continue
+        '''
+        if any([r_.find(exception)!=-1 for exception in EXCEPTIONS]): continue
+
+        if r_ in except_korean_rgx:
+            print("\tnot clean '%s' from '%s'" % (r_, txt))
+            # print("\tnot clean '%s'" % (r_))
+            continue
+
+        # print("clean '%s' from '%s'" % (r_, txt))
+        print("clean '%s'" % (r_))
         txt = txt.replace(r_, '')
 
     # E.g. '- 부호가 다른 수' --> '부호가 다른 수'
@@ -57,9 +73,10 @@ def test_clean_txt():
 def main():
 
     name = ["상효", "은지", "두희", "민경", "대한", "영근", "상헌", "근형", "형기"]
-    data = {}
 
-    data = {}
+    train_x = 'train_x'
+    train_y = 'train_y'
+    data = {train_x: [], train_y: []}
     start = time.time()
 
     total_count = 0
@@ -68,13 +85,10 @@ def main():
         df = pd.read_excel("Data/한시에 데이터를 만들자.xlsx", sheet_name = member, 
                            header=1, na_filter=False)
         for _, row in df.iterrows():
-            data_text = [row[k] for k in df.keys() \
-                            if (k == 'train_x') or (k == 'train_y')]
+            data_text = [row[train_x], row[train_y]]
             if '' not in data_text:
-                for i, k in enumerate(df.keys()):
-                    if k not in data.keys():
-                        data[k] = []
-                    data[k].append(clean_txt(row[i]))
+                for i, key in enumerate([train_x, train_y]):
+                    data[key].append(clean_txt(data_text[i]))
                     
                 count+=1
         print(member, count)
