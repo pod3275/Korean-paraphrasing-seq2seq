@@ -25,6 +25,13 @@ def clean_txt(txt):
     except_rgx = EXCEPT_RGX.findall(txt)
     except_korean_rgx = EXCEPT_KOREAN_RGX.findall(txt)
 
+    # E.g. '- 부호가 다른 수' --> '부호가 다른 수'
+    if txt != '':
+        if txt[0] == '-':
+            txt = txt[1:]
+
+    txt = txt.replace("\n", "") # 개행 문자 제거
+
     for r_ in eng_brc_rgx_ + step_rgx_:
         if r_ in except_rgx: continue
 
@@ -35,18 +42,13 @@ def clean_txt(txt):
         if any([r_.find(exception)!=-1 for exception in EXCEPTIONS]): continue
 
         if r_ in except_korean_rgx:
-            print("\tnot clean '%s' from '%s'" % (r_, txt))
-            # print("\tnot clean '%s'" % (r_))
+            # print("\tnot clean '%s' from '%s'" % (r_, txt))
+            print("\tnot clean '%s'" % (r_))
             continue
 
         # print("clean '%s' from '%s'" % (r_, txt))
         print("clean '%s'" % (r_))
         txt = txt.replace(r_, '')
-
-    # E.g. '- 부호가 다른 수' --> '부호가 다른 수'
-    if txt != '':
-        if txt[0] == '-':
-            txt = txt[1:]
 
     return txt.strip()
 
