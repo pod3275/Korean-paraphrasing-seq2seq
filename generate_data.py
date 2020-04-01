@@ -13,6 +13,7 @@ from openpyxl import Workbook
 import re
 
 ENG_BRC_RGX = re.compile(r'[(][\w?.,~∼ :/]+[)]')
+# ENG_BRC_RGX = re.compile(r'[(].*?[)]')
 STEP_RGX = re.compile(r'step|Step')
 EXCEPT_RGX = re.compile(r'[(][0-9]+[)]')
 EXCEPTIONS = ['(수식)','(미지수)','(등호)','(화살표)']
@@ -57,18 +58,18 @@ def main():
 
     name = ["상효", "은지", "두희", "민경", "대한", "영근", "상헌", "근형", "형기"]
     data = {}
-    data_length = 0
 
     data = {}
     start = time.time()
-    data_len = []
 
+    total_count = 0
     for member in name:
         count = 0
         df = pd.read_excel("Data/한시에 데이터를 만들자.xlsx", sheet_name = member, 
                            header=1, na_filter=False)
         for _, row in df.iterrows():
-            data_text = [row[k] for k in df.keys() if k != '단위지식 type']
+            data_text = [row[k] for k in df.keys() \
+                            if (k == 'train_x') or (k == 'train_y')]
             if '' not in data_text:
                 for i, k in enumerate(df.keys()):
                     if k not in data.keys():
@@ -76,10 +77,11 @@ def main():
                     data[k].append(clean_txt(row[i]))
                     
                 count+=1
-        
-        data_len.append(count)
+        print(member, count)
+        total_count += count
 
     #time : 3.0977089405059814 seconds
+    print("한시에 데이터를 만들자: %d" % total_count)
     print("time :", time.time()-start, "seconds")
 
     train_x = data['train_x']
@@ -97,6 +99,7 @@ def main():
 
     # shuffling
     idx = np.arange(total_len)
+    print("총 데이터: %d" % total_len)
     np.random.shuffle(idx)
 
     train_x = list(np.array(train_x)[idx])
