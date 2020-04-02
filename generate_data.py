@@ -50,6 +50,10 @@ def clean_txt(txt):
         print("clean '%s'" % (r_))
         txt = txt.replace(r_, '')
 
+    if txt.strip() == '':
+        print("Output has no string." % txt)
+        raise valueError
+
     return txt.strip()
 
 def test_clean_txt():
