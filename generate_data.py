@@ -16,7 +16,7 @@ ENG_BRC_RGX = re.compile(r'[(].*?[)]')
 STEP_RGX = re.compile(r'step|Step')
 EXCEPT_RGX = re.compile(r'[(][0-9]+[)]')
 # 괄호 안에 한글만 들어있는 경우는 clean 하지 않음
-EXCEPT_KOREAN_RGX = re.compile(r'[(][\u3131-\u3163\uac00-\ud7a3 ]+[)]')
+EXCEPT_KOREAN_RGX = re.compile(r'[(][\u3131-\u3163\uac00-\ud7a3 ,]+[)]')
 EXCEPTIONS = ['(수식)','(미지수)','(등호)','(화살표)']
 
 def clean_txt(txt):
